@@ -44,7 +44,7 @@ export function QuizList({ playingId, onOpenConsole, onEdit }: Props) {
                 <Play /> Запустить
               </Button>
             )}
-            <Button variant="outline" onClick={() => onEdit(q.id)}>
+            <Button variant="outline" data-testid={`edit-${q.id}`} onClick={() => onEdit(q.id)}>
               <Pencil /> Редактировать
             </Button>
           </CardContent>
