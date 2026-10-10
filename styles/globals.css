@@ -118,3 +118,45 @@
     @apply bg-background text-foreground;
   }
 }
+
+.dark {
+  --primary: oklch(0.72 0.2 305);
+  --primary-foreground: oklch(0.16 0.03 305);
+  --ring: oklch(0.72 0.2 305);
+  --background: oklch(0.13 0.02 285);
+  --card: oklch(0.17 0.025 285);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@keyframes party-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.party-bg {
+  background:
+    radial-gradient(circle at 20% 20%, oklch(0.55 0.25 330 / 0.45), transparent 45%),
+    radial-gradient(circle at 80% 30%, oklch(0.6 0.2 260 / 0.45), transparent 45%),
+    radial-gradient(circle at 50% 90%, oklch(0.65 0.2 50 / 0.35), transparent 50%),
+    oklch(0.13 0.02 285);
+  background-size: 200% 200%;
+  animation: party-gradient 18s ease infinite;
+}
