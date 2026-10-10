@@ -22,6 +22,17 @@ if (!result.success) {
   for (const log of result.logs) console.error(log);
   process.exit(1);
 }
+// Maintenance CLI shipped with the image: `docker exec party-quiz bun seed-reset.js frames`.
+const seedReset = await Bun.build({
+  entrypoints: ["scripts/seed-reset.ts"],
+  outdir: "dist",
+  target: "bun",
+  minify: true,
+});
+if (!seedReset.success) {
+  for (const log of seedReset.logs) console.error(log);
+  process.exit(1);
+}
 for (const dir of ["drizzle", "content", "public"]) {
   await cp(dir, `dist/${dir}`, { recursive: true });
 }

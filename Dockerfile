@@ -1,4 +1,5 @@
-FROM oven/bun:1-alpine AS build
+# dist/ is architecture-independent: build it natively once instead of under QEMU per platform.
+FROM --platform=$BUILDPLATFORM oven/bun:1-alpine AS build
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
