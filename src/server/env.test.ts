@@ -13,6 +13,13 @@ test("development defaults", () => {
   expect(loadEnv({ AUTH_DEV_BYPASS: "1" }).devBypass).toBe(true);
 });
 
+test("default auth URL follows PORT", () => {
+  expect(loadEnv({ PORT: "3999" }).BETTER_AUTH_URL).toBe("http://localhost:3999");
+  expect(
+    loadEnv({ PORT: "3999", BETTER_AUTH_URL: "https://quiz.example.com" }).BETTER_AUTH_URL,
+  ).toBe("https://quiz.example.com");
+});
+
 test("production requires secrets and ignores the dev bypass", () => {
   expect(() => loadEnv({ NODE_ENV: "production" })).toThrow("BETTER_AUTH_SECRET");
   const env = loadEnv({

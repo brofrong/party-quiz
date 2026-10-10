@@ -30,7 +30,7 @@ export function FullscreenButton() {
         full ? document.exitFullscreen() : document.documentElement.requestFullscreen()
       }
       className={cn(
-        "fixed right-4 bottom-4 z-40 rounded-full bg-black/50 p-3 text-white backdrop-blur transition-opacity",
+        "fixed right-4 bottom-4 z-40 hidden rounded-full bg-black/50 p-3 text-white backdrop-blur transition-opacity sm:block",
         visible ? "opacity-100" : "pointer-events-none opacity-0",
       )}
     >
