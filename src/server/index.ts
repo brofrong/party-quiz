@@ -4,7 +4,8 @@ import playerPage from "../client/player/index.html";
 import { createServer } from "./app";
 import { loadEnv } from "./env";
 
-const root = join(import.meta.dir, "../..");
+// Working directory = project root (dev) or /app (Docker); also valid for the bundled dist/index.js.
+const root = process.cwd();
 const env = loadEnv();
 const { server } = await createServer({
   env,

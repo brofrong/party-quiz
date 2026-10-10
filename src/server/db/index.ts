@@ -6,7 +6,8 @@ import * as schema from "./schema";
 
 export type Db = BunSQLiteDatabase<typeof schema>;
 
-const MIGRATIONS_DIR = join(import.meta.dir, "../../../drizzle");
+// Resolved from the working directory (project root in dev, /app in Docker) so it also works bundled.
+const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
 
 export function openDatabase(file: string): { sqlite: Database; db: Db } {
   const sqlite = new Database(file, { create: true });

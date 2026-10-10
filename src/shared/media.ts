@@ -1,12 +1,4 @@
-import { z } from "zod";
-
-export const mediaRefSchema = z.object({
-  hash: z.string().regex(/^[a-f0-9]{16}$/),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
-  variants: z.array(z.number().int().positive()).min(1),
-});
-export type MediaRef = z.infer<typeof mediaRefSchema>;
+export type MediaRef = { hash: string; width: number; height: number; variants: number[] };
 
 export const MEDIA_FORMATS = ["avif", "webp"] as const;
 export type MediaFormat = (typeof MEDIA_FORMATS)[number];

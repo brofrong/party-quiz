@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import QRCode from "qrcode";
+import QRCode from "qrcode/lib/browser";
 import { useEffect, useState } from "react";
 import { pluralRu } from "@/lib/plural";
 

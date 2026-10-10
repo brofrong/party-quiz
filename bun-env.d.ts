@@ -17,3 +17,9 @@ declare module "*.module.css" {
   const classes: { readonly [key: string]: string };
   export = classes;
 }
+
+// qrcode's browser build (the package "browser" field is ignored by full-stack Bun.build).
+declare module "qrcode/lib/browser" {
+  import * as QRCode from "qrcode";
+  export = QRCode;
+}

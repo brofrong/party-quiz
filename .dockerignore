@@ -1,0 +1,11 @@
+node_modules
+data
+.git
+.github
+.superpowers
+docs
+e2e
+scripts/media-import.ts
+*.md
+.env*
+dist

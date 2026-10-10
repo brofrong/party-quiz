@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { type MediaRef, mediaRefSchema } from "@/shared/media";
+import type { MediaRef } from "@/shared/media";
+import { mediaRefSchema } from "@/shared/media-schema";
 
 export const REVEAL_ANIMATIONS = [
   "dissolve",
