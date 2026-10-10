@@ -48,6 +48,9 @@ test("health, pages and media", async () => {
   expect(media.headers.get("content-type")).toBe("image/avif");
   expect((await fetch(`${base}/media/..%2Fapp.db`)).status).toBe(404);
   expect((await fetch(`${base}/media/0000000000000002-1280.avif`)).status).toBe(404);
+  const dev = await fetch(`${base}/api/dev/host-login`, { redirect: "manual" });
+  expect(dev.status).toBe(302);
+  expect(dev.headers.get("set-cookie")).toContain("dev_host=1");
 });
 
 test("guest over WebSocket follows the host in realtime", async () => {
@@ -87,7 +90,9 @@ test("guest over WebSocket follows the host in realtime", async () => {
       };
       check();
     });
-  const sub = guest.game.onState.subscribe(undefined, { onData: (s) => snapshots.push(s) });
+  const sub = guest.game.onState.subscribe(undefined, {
+    onData: (s) => snapshots.push(s as PlayerSnapshot),
+  });
 
   await waitFor((s) => s.status === "lobby" && s.online === 1);
   expect(await hostClient.me.query()).toMatchObject({ isHost: true });

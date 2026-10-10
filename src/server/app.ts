@@ -65,18 +65,16 @@ export async function createServer({ env, pages, contentDir, mediaDir }: ServerO
     });
   };
 
-  const devRoutes = env.devBypass
-    ? {
-        "/api/dev/host-login": () =>
-          new Response(null, {
-            status: 302,
-            headers: {
-              location: "/admin",
-              "set-cookie": `${DEV_HOST_COOKIE}=1; Path=/; HttpOnly; SameSite=Lax`,
-            },
-          }),
-      }
-    : {};
+  const devHostLogin = () =>
+    env.devBypass
+      ? new Response(null, {
+          status: 302,
+          headers: {
+            location: "/admin",
+            "set-cookie": `${DEV_HOST_COOKIE}=1; Path=/; HttpOnly; SameSite=Lax`,
+          },
+        })
+      : new Response("Not found", { status: 404 });
 
   const server = Bun.serve({
     port: env.PORT,
@@ -88,7 +86,7 @@ export async function createServer({ env, pages, contentDir, mediaDir }: ServerO
       "/api/health": () => Response.json({ ok: true }),
       "/api/auth/*": (req) => auth.handler(req),
       "/media/:file": (req) => serveMedia(req.params.file),
-      ...devRoutes,
+      "/api/dev/host-login": devHostLogin,
     },
     fetch(req, srv) {
       return trpcHttp(req, srv) ?? new Response("Not found", { status: 404 });
