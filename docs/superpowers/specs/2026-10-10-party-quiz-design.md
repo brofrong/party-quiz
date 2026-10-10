@@ -148,9 +148,10 @@ type Session =
 
 ### Авторизация
 
-- Better Auth, база — та же SQLite (drizzle adapter).
-- `genericOAuth` с `providerId: "sso"`, `discoveryUrl: ${OIDC_ISSUER}/.well-known/openid-configuration`,
-  `scopes: ["openid","profile","email"]`, PKCE. Callback: `/api/auth/oauth2/callback/sso`.
+- Better Auth, база — тот же файл SQLite (встроенная поддержка `bun:sqlite`); свои таблицы
+  Better Auth создаёт при старте через `getMigrations(...).runMigrations()`, наши — Drizzle.
+- `genericOAuth` (в Better Auth 1.7 — обычный social-провайдер: вход `signIn.social({ provider: "sso" })`) с `providerId: "sso"`, `discoveryUrl: ${OIDC_ISSUER}/.well-known/openid-configuration`,
+  `scopes: ["openid","profile","email"]`, PKCE. Callback: `/api/auth/callback/sso`.
 - `anonymous`: гостевая страница при загрузке вызывает `signIn.anonymous()`, если сессии нет.
   Если позже тот же браузер входит через SSO — анонимный пользователь удаляется (поведение плагина).
 - Ведущий = любой пользователь, вошедший через SSO.
@@ -273,13 +274,13 @@ type RevealAnimation = "dissolve" | "pixels" | "curtain" | "collapse" | "flyaway
 ## Деплой
 
 - Репозиторий: `github.com/brofrong/party-quiz` (публичный).
-- `Dockerfile`: стадия `deps` (`bun install --frozen-lockfile`), стадия `build`
-  (`bun build --target=bun --production src/server/index.ts --outdir dist` — Bun
-  full-stack сборка: сервер вместе с HTML-точками и их бандлами, Tailwind через
-  `bun-plugin-tailwind`), финальная стадия `oven/bun:1-alpine` с `dist/`, `public/media`,
-  `content/`, миграциями (без `node_modules`, если сборка самодостаточна; иначе только
-  production-зависимости). `NODE_ENV=production`, порт `3000`, volume `/data`.
-  Запуск от непривилегированного пользователя. `HEALTHCHECK` на `/api/health`.
+- `Dockerfile`: стадия `deps` (`bun install --frozen-lockfile --production`), финальная
+  стадия `oven/bun:1-alpine` с `src/`, `styles/`, `public/media`, `content/`, `drizzle/`,
+  `bunfig.toml` и production-зависимостями. Запуск `bun src/server/index.ts` с
+  `NODE_ENV=production`: Bun сам собирает и минифицирует HTML-точки (Tailwind через
+  `bun-plugin-tailwind` из `bunfig.toml`) при старте и держит бандлы в памяти — отдельный
+  шаг сборки не нужен. Порт `3000`, volume `/data`. Запуск от непривилегированного
+  пользователя. `HEALTHCHECK` на `/api/health`.
 - `.github/workflows/docker.yml`: на push в `main` и теги `v*` — Biome check, `bun test`,
   затем `docker/build-push-action` (QEMU + buildx, `linux/amd64,linux/arm64`) в
   `ghcr.io/brofrong/party-quiz` с тегами `latest`, `sha-<short>`, semver.
@@ -309,7 +310,7 @@ type RevealAnimation = "dissolve" | "pixels" | "curtain" | "collapse" | "flyaway
     preload корректен).
   - GameEngine: start/stop/dispatch/reset, персист и восстановление, contentChanged.
   - tRPC: гость не может вызвать host-процедуры; `quiz.update` валидирует контент.
-- E2E (Playwright, локально): ведущий (с тестовой SSO-сессией через dev-only bypass,
+- E2E (puppeteer-core + локальный Chrome, отдельный скрипт `bun run e2e`): ведущий (с тестовой SSO-сессией через dev-only bypass,
   включаемый `AUTH_DEV_BYPASS=1` только при `NODE_ENV!=production`) запускает
   викторину; две гостевые страницы получают кадр; «далее» и «открыть» синхронизируются;
   переподключение после разрыва возвращает текущий кадр.
