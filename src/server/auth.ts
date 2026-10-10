@@ -33,6 +33,11 @@ function authOptions(sqlite: Database, env: Env) {
     trustedOrigins: [env.BETTER_AUTH_URL],
     session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
     telemetry: { enabled: false },
+    rateLimit: {
+      enabled: env.NODE_ENV === "production",
+      // A whole party joins at once from one Wi-Fi (one IP); the default /sign-in rule allows 3 per 10 s.
+      customRules: { "/sign-in/anonymous": { window: 60, max: 1000 } },
+    },
     plugins: [anonymous({ emailDomainName: "guest.party-quiz.local" }), ...sso],
   } satisfies BetterAuthOptions;
 }

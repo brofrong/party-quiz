@@ -23,7 +23,7 @@ export const frameRevealModule: QuizModule<
   contentSchema: frameRevealContentSchema,
   stateSchema: frameRevealStateSchema,
   actionSchema: frameRevealActionSchema,
-  initialState: () => initialState(),
+  initialState,
   reduce,
   publicView,
   hostView,

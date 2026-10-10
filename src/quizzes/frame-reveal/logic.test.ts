@@ -17,16 +17,26 @@ describe("reduce", () => {
   });
 
   test("next on the last slide and prev on the first are no-ops", () => {
-    const last = { index: 2, phase: "revealed" as const, animation: "dissolve" as const };
+    const last = {
+      index: 2,
+      slideId: "s4",
+      phase: "revealed" as const,
+      animation: "dissolve" as const,
+    };
     expect(reduce(content, last, { type: "next" }, rng)).toEqual(last);
-    const first = { ...last, index: 0 };
+    const first = { ...last, index: 0, slideId: "s1" };
     expect(reduce(content, first, { type: "prev" }, rng)).toEqual(first);
   });
 
   test("goto clamps and hides; goto to the same slide keeps the phase", () => {
     const s = reduce(content, initialState(), { type: "goto", index: 99 }, rng);
     expect(s).toMatchObject({ index: 2, phase: "hidden" });
-    const revealed = { index: 1, phase: "revealed" as const, animation: "dissolve" as const };
+    const revealed = {
+      index: 1,
+      slideId: "s3",
+      phase: "revealed" as const,
+      animation: "dissolve" as const,
+    };
     expect(reduce(content, revealed, { type: "goto", index: 1 }, rng).phase).toBe("revealed");
   });
 
@@ -40,7 +50,7 @@ describe("reduce", () => {
   test("hide closes the frame", () => {
     const s = reduce(
       content,
-      { index: 0, phase: "revealed", animation: "curtain" },
+      { index: 0, slideId: "s1", phase: "revealed", animation: "curtain" },
       { type: "hide" },
       rng,
     );
@@ -50,7 +60,7 @@ describe("reduce", () => {
   test("an index left out of range by content edits is clamped", () => {
     const s = reduce(
       content,
-      { index: 10, phase: "hidden", animation: "dissolve" },
+      { index: 10, slideId: null, phase: "hidden", animation: "dissolve" },
       { type: "hide" },
       rng,
     );
@@ -67,7 +77,12 @@ describe("publicView", () => {
   });
 
   test("shows only the current answer after reveal", () => {
-    const v = publicView(content, { index: 0, phase: "revealed", animation: "dissolve" });
+    const v = publicView(content, {
+      index: 0,
+      slideId: "s1",
+      phase: "revealed",
+      animation: "dissolve",
+    });
     expect(v.answer).toBe("Ответ s1");
     expect(JSON.stringify(v)).not.toContain("Ответ s3");
   });
@@ -110,5 +125,44 @@ describe("content schema", () => {
     expect(frameRevealContentSchema.safeParse(makeContent(["a", "a"])).success).toBe(false);
     const bad = makeContent(["a"], { a: { rects: [{ x: 0.8, y: 0, w: 0.5, h: 0.2 }] } });
     expect(frameRevealContentSchema.safeParse(bad).success).toBe(false);
+  });
+});
+
+describe("content edits during a game", () => {
+  const live = makeContent(["s1", "s2", "s3", "s4"]);
+  const revealedOn = (c: typeof live, id: string) => {
+    let s = initialState(c);
+    while (publicView(c, s).slide?.id !== id) s = reduce(c, s, { type: "next" }, rng);
+    return reduce(c, s, { type: "reveal", animation: "curtain" }, rng);
+  };
+
+  test("the revealed slide is followed by id when earlier slides are disabled or reordered", () => {
+    const s = revealedOn(live, "s3");
+    const edited = makeContent(["s3", "s4", "s1", "s2"], { s1: { enabled: false } });
+    const v = publicView(edited, s);
+    expect(v.slide?.id).toBe("s3");
+    expect(v.phase).toBe("revealed");
+    expect(v.answer).toBe("Ответ s3");
+  });
+
+  test("if the revealed slide disappears, the slide now shown stays covered", () => {
+    const s = revealedOn(live, "s3");
+    const edited = makeContent(["s1", "s2", "s3", "s4"], { s3: { enabled: false } });
+    const v = publicView(edited, s);
+    expect(v.slide?.id).not.toBe("s3");
+    expect(v.phase).toBe("hidden");
+    expect(v.answer).toBeNull();
+  });
+
+  test("reveal on an empty quiz does nothing, so re-enabling slides shows them covered", () => {
+    const empty = makeContent(["s1"], { s1: { enabled: false } });
+    const s = reduce(empty, initialState(empty), { type: "reveal", animation: "pixels" }, rng);
+    expect(publicView(live, s).phase).toBe("hidden");
+  });
+
+  test("a second reveal keeps the running animation (double key press)", () => {
+    const s = reduce(live, initialState(live), { type: "reveal", animation: "random" }, () => 0);
+    const again = reduce(live, s, { type: "reveal", animation: "random" }, () => 0.99);
+    expect(again.animation).toBe(s.animation);
   });
 });

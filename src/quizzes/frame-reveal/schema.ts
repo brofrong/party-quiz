@@ -49,6 +49,8 @@ export type FrameRevealContent = z.infer<typeof frameRevealContentSchema>;
 
 export const frameRevealStateSchema = z.object({
   index: z.number().int().min(0),
+  /** Id of the slide the state refers to; lets content edits follow it (null = unknown). */
+  slideId: z.string().nullable().default(null),
   phase: z.enum(["hidden", "revealed"]),
   animation: revealAnimationSchema,
 });
