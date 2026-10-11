@@ -58,9 +58,13 @@ AUTH_DEV_BYPASS=1 bun run dev
    | `BETTER_AUTH_SECRET` | случайная строка ≥ 32 символов: `openssl rand -base64 32` |
    | `OIDC_ISSUER` | адрес SSO, по умолчанию `https://sso.brofrong.ru` |
    | `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | клиент из SSO (см. ниже) |
-   | `PARTY_QUIZ_PORT` | порт на хосте, по умолчанию `3000` |
+   | `PARTY_QUIZ_PORT` | порт на хосте, если открываешь его напрямую (по умолчанию `3000`) |
 
-2. Данные (SQLite: пользователи, викторины с твоими правками, состояние игры) лежат в
+2. Контейнер подключается к внешней сети `proxy` (`docker network create proxy`, если её ещё
+   нет) — обратный прокси в этой сети ходит на `party-quiz:3000`. Порт наружу по умолчанию не
+   открыт; чтобы открыть, раскомментируй `ports` в `docker-compose.yml`.
+
+3. Данные (SQLite: пользователи, викторины с твоими правками, состояние игры) лежат в
    volume `party-quiz-data` (`/data` в контейнере).
 
 ### Клиент в SSO

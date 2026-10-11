@@ -1,18 +1,26 @@
 services:
-  party-quiz:
+  app:
     image: ghcr.io/brofrong/party-quiz:latest
     container_name: party-quiz
     restart: unless-stopped
-    ports:
-      - "${PARTY_QUIZ_PORT:-3000}:3000"
+    # Наружу ходим через обратный прокси в сети proxy (порт контейнера — 3000).
+    # Раскомментируй, чтобы открыть порт напрямую:
+    # ports:
+    #   - "${PARTY_QUIZ_PORT:-3000}:3000"
     environment:
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Публичный адрес сайта, например https://quiz.brofrong.ru}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Сгенерируй: openssl rand -base64 32}
-      OIDC_ISSUER: ${OIDC_ISSUER:-https://sso.brofrong.ru}
-      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?Client ID из SSO}
-      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Client secret из SSO}
+      BETTER_AUTH_URL: "${BETTER_AUTH_URL:?Публичный адрес сайта, например https://quiz.brofrong.ru}"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Сгенерируй: openssl rand -base64 32}"
+      OIDC_ISSUER: "${OIDC_ISSUER:-https://sso.brofrong.ru}"
+      OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:?Client ID из SSO}"
+      OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:?Client secret из SSO}"
     volumes:
       - party-quiz-data:/data
+    networks:
+      - proxy
 
 volumes:
   party-quiz-data:
+
+networks:
+  proxy:
+    external: true
