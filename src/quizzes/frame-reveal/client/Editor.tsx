@@ -136,7 +136,7 @@ export function FrameRevealEditor({ content, saving, onSave, onDirtyChange }: Ed
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="answer">Ответ</Label>
+                  <Label htmlFor="answer">Откуда</Label>
                   <Input
                     id="answer"
                     data-testid="editor-answer"
@@ -145,7 +145,7 @@ export function FrameRevealEditor({ content, saving, onSave, onDirtyChange }: Ed
                   />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="hint">Что закрыто (подсказка ведущему)</Label>
+                  <Label htmlFor="hint">Что скрыто (покажется гостям при открытии)</Label>
                   <Input
                     id="hint"
                     value={selected.hint}

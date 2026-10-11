@@ -32,7 +32,7 @@ export type Rect = z.infer<typeof rectSchema>;
 export const slideSchema = z.object({
   id: z.string().min(1),
   media: mediaRefSchema,
-  answer: z.string().trim().min(1, "Ответ не может быть пустым"),
+  answer: z.string().trim().min(1, "Поле «Откуда» не может быть пустым"),
   hint: z.string(),
   rects: z.array(rectSchema),
   enabled: z.boolean(),
@@ -76,8 +76,10 @@ export type FrameRevealPublicView = {
   slide: PublicSlide | null;
   phase: FrameRevealState["phase"];
   animation: RevealAnimation;
-  /** Only set after reveal. */
+  /** Where the frame is from; only set after reveal. */
   answer: string | null;
+  /** What the covers hid (slide hint); only set after reveal. */
+  hidden: string | null;
   /** Media of the next slides, for background preloading. */
   preload: MediaRef[];
 };

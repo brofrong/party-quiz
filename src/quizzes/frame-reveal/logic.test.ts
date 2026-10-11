@@ -87,6 +87,17 @@ describe("publicView", () => {
     expect(JSON.stringify(v)).not.toContain("Ответ s3");
   });
 
+  test("tells what was hidden only after reveal", () => {
+    expect(publicView(content, initialState(content)).hidden).toBeNull();
+    const v = publicView(content, {
+      index: 0,
+      slideId: "s1",
+      phase: "revealed",
+      animation: "dissolve",
+    });
+    expect(v.hidden).toBe("Подсказка s1");
+  });
+
   test("preloads the next two enabled slides", () => {
     const v = publicView(content, initialState());
     expect(v.total).toBe(3);
@@ -105,6 +116,7 @@ describe("publicView", () => {
       phase: "hidden",
       animation: "dissolve",
       answer: null,
+      hidden: null,
       preload: [],
     });
   });

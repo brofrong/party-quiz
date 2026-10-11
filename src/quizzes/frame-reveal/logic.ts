@@ -91,6 +91,7 @@ export function publicView(
       phase: "hidden",
       animation: state.animation,
       answer: null,
+      hidden: null,
       preload: [],
     };
   }
@@ -101,6 +102,7 @@ export function publicView(
     phase,
     animation: state.animation,
     answer: phase === "revealed" ? current.answer : null,
+    hidden: phase === "revealed" && current.hint.trim() ? current.hint : null,
     preload: slides.slice(index + 1, index + 3).map((s) => s.media),
   };
 }

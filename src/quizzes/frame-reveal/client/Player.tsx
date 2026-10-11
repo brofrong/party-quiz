@@ -56,9 +56,18 @@ export function FrameRevealPlayer({ view: raw }: { view: unknown }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ delay: 0.5, type: "spring", bounce: 0.35 }}
-              className="rounded-2xl bg-primary px-5 py-2 text-center font-bold text-lg text-primary-foreground shadow-lg sm:text-3xl"
+              className="flex flex-col items-center gap-0.5 rounded-2xl bg-primary px-5 py-2 text-center text-primary-foreground shadow-lg"
             >
-              {view.answer}
+              {view.hidden && (
+                <span className="text-sm sm:text-xl">
+                  <span className="opacity-70">Скрыто:</span>{" "}
+                  <span className="font-semibold">{view.hidden}</span>
+                </span>
+              )}
+              <span className="text-lg sm:text-3xl">
+                <span className="font-normal opacity-70">Откуда:</span>{" "}
+                <span className="font-bold">{view.answer}</span>
+              </span>
             </motion.div>
           )}
         </AnimatePresence>

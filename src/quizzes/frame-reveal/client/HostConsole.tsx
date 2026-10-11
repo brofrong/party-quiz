@@ -74,13 +74,13 @@ export function FrameRevealHostConsole({ view: raw, dispatch, busy, onReset }: H
         <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-center">
           <div className="min-w-0 flex-1">
             <div className="text-muted-foreground text-xs uppercase tracking-wide">
-              Ответ · кадр {view.total ? view.index + 1 : 0} из {view.total}
+              Откуда · кадр {view.total ? view.index + 1 : 0} из {view.total}
             </div>
             <div data-testid="host-answer" className="truncate font-bold text-3xl">
               {view.currentAnswer ?? "—"}
             </div>
             {view.currentHint && (
-              <div className="text-muted-foreground">Закрыто: {view.currentHint}</div>
+              <div className="text-muted-foreground">Скрыто: {view.currentHint}</div>
             )}
           </div>
           <div className="flex items-center gap-2">
