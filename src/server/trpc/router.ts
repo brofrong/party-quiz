@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getQuizModule, quizModules } from "@/quizzes/registry.server";
+import { QUIZ_FILE_FORMAT, type QuizFile, quizFileSchema } from "@/shared/quiz-file";
 import { guestProcedure, hostProcedure, publicProcedure, router, run } from "./init";
 
 const quizIdInput = z.object({ quizId: z.string().min(1) });
@@ -56,6 +57,45 @@ export const appRouter = router({
       if (!rec) throw new TRPCError({ code: "NOT_FOUND", message: "Викторина не найдена" });
       return { id: rec.id, type: rec.type, title: rec.title, content: rec.content };
     }),
+    export: hostProcedure.input(quizIdInput).query(({ ctx, input }): QuizFile => {
+      const rec = ctx.repo.get(input.quizId);
+      if (!rec) throw new TRPCError({ code: "NOT_FOUND", message: "Викторина не найдена" });
+      return {
+        format: QUIZ_FILE_FORMAT,
+        id: rec.id,
+        type: rec.type,
+        title: rec.title,
+        exportedAt: new Date().toISOString(),
+        content: rec.content,
+      };
+    }),
+    import: hostProcedure
+      .input(z.object({ quizId: z.string().min(1), file: z.unknown() }))
+      .mutation(({ ctx, input }) =>
+        run(() => {
+          const rec = ctx.repo.get(input.quizId);
+          if (!rec) throw new TRPCError({ code: "NOT_FOUND", message: "Викторина не найдена" });
+          const file = quizFileSchema.parse(input.file);
+          if (file.type !== rec.type) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Файл от другой викторины (тип «${file.type}»)`,
+            });
+          }
+          const module = getQuizModule(rec.type);
+          const content = module.contentSchema.parse(file.content);
+          const missing = (module.mediaRefs?.(content) ?? []).filter((m) => !ctx.hasMedia(m));
+          if (missing.length) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `На сервере нет картинок для ${missing.length} шт. — сначала задеплой версию с ними`,
+            });
+          }
+          ctx.repo.updateContent(rec.id, content);
+          ctx.engine.contentChanged(rec.id);
+          return { items: module.itemCount(content) };
+        }),
+      ),
     update: hostProcedure
       .input(z.object({ quizId: z.string().min(1), content: z.unknown() }))
       .mutation(({ ctx, input }) =>

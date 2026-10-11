@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { pluralRu } from "@/lib/plural";
+import { QuizTransfer } from "./QuizTransfer";
 
 type Props = { playingId?: string; onOpenConsole: () => void; onEdit: (quizId: string) => void };
 
@@ -47,6 +48,7 @@ export function QuizList({ playingId, onOpenConsole, onEdit }: Props) {
             <Button variant="outline" data-testid={`edit-${q.id}`} onClick={() => onEdit(q.id)}>
               <Pencil /> Редактировать
             </Button>
+            <QuizTransfer quizId={q.id} title={q.title} />
           </CardContent>
         </Card>
       ))}

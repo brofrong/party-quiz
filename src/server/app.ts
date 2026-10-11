@@ -1,8 +1,8 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { HTMLBundle } from "bun";
 import { createBunHttpHandler, createBunWSHandler } from "trpc-bun-adapter";
-import { MEDIA_FILE_RE } from "@/shared/media";
+import { MEDIA_FILE_RE, MEDIA_FORMATS, type MediaRef, mediaFileName } from "@/shared/media";
 import { createAuth, migrateAuth } from "./auth";
 import { openDatabase } from "./db";
 import { GameEngine } from "./engine";
@@ -34,7 +34,17 @@ export async function createServer({ env, pages, contentDir, mediaDir }: ServerO
   if (seeded.length) console.log(`Добавлены викторины из сида: ${seeded.join(", ")}`);
 
   const engine = new GameEngine({ repo, store: createSessionStore(db) });
-  const createContext = createContextFactory({ auth, engine, repo, devBypass: env.devBypass });
+  const hasMedia = (ref: MediaRef) =>
+    ref.variants.every((w) =>
+      MEDIA_FORMATS.every((f) => existsSync(join(mediaDir, mediaFileName(ref.hash, w, f)))),
+    );
+  const createContext = createContextFactory({
+    auth,
+    engine,
+    repo,
+    hasMedia,
+    devBypass: env.devBypass,
+  });
   const onError = ({ error, path }: { error: Error; path?: string }) => {
     if ((error as { code?: string }).code === "INTERNAL_SERVER_ERROR") {
       console.error(`tRPC ${path ?? "?"}:`, error);

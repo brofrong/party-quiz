@@ -165,7 +165,31 @@ try {
   for (const g of guests) {
     await (await focus(g)).waitForSelector('[data-testid="lobby"]', { timeout: 10000 });
   }
-  console.log(`E2E OK (${final}, ended → lobby)`);
+
+  // Import a quiz file through the admin (how edits move from localhost to prod).
+  const api = (path: string) =>
+    fetch(`${base}/api/trpc/${path}`, { headers: { cookie: "dev_host=1" } });
+  const exported = (
+    await (await api(`quiz.export?input=${encodeURIComponent('{"quizId":"frames"}')}`)).json()
+  ).result.data;
+  exported.content.slides[0].answer = "Импортированный ответ";
+  const filePath = join(dataDir, "frames-import.json");
+  await Bun.write(filePath, JSON.stringify(exported));
+  await focus(host);
+  await host.waitForSelector('[data-testid="import-file-frames"]');
+  const input = await host.$('[data-testid="import-file-frames"]');
+  await (input as unknown as { uploadFile(p: string): Promise<void> }).uploadFile(filePath);
+  await host.waitForSelector('[data-testid="import-confirm"]', { timeout: 5000 });
+  await host.click('[data-testid="import-confirm"]');
+  await host.waitForFunction(
+    () => document.querySelector("[data-sonner-toast]")?.textContent?.includes("Загружено"),
+    { timeout: 5000 },
+  );
+  const after = (
+    await (await api(`quiz.get?input=${encodeURIComponent('{"quizId":"frames"}')}`)).json()
+  ).result.data;
+  assert(after.content.slides[0].answer === "Импортированный ответ", "import replaced the content");
+  console.log(`E2E OK (${final}, ended → lobby, import ok)`);
 } finally {
   await browser.close();
   server.kill();

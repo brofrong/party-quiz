@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { MediaRef } from "@/shared/media";
 
 /**
  * Server half of a quiz type. Everything here is pure and serializable:
@@ -17,6 +18,8 @@ export interface QuizModule<C, S, A, PV, HV> {
   /** What the host console sees. */
   hostView(content: C, state: S): HV;
   itemCount(content: C): number;
+  /** Every picture the content references (checked when a quiz file is imported). */
+  mediaRefs?(content: C): MediaRef[];
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: the registry erases per-module generics

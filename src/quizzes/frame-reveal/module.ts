@@ -28,4 +28,5 @@ export const frameRevealModule: QuizModule<
   publicView,
   hostView,
   itemCount: (c) => enabledSlides(c).length,
+  mediaRefs: (c) => c.slides.map((s) => s.media),
 };
