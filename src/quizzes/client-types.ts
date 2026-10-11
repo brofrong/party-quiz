@@ -1,6 +1,12 @@
 import type { ComponentType } from "react";
 
-export type PlayerModule = { type: string; Player: ComponentType<{ view: unknown }> };
+export type PlayerProps = {
+  view: unknown;
+  /** Sends a guest action (e.g. a vote). Absent in the host's preview. */
+  act?: (action: unknown) => void;
+};
+
+export type PlayerModule = { type: string; Player: ComponentType<PlayerProps> };
 
 export type HostConsoleProps = {
   view: unknown;

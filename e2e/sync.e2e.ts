@@ -189,7 +189,92 @@ try {
     await (await api(`quiz.get?input=${encodeURIComponent('{"quizId":"frames"}')}`)).json()
   ).result.data;
   assert(after.content.slides[0].answer === "Импортированный ответ", "import replaced the content");
-  console.log(`E2E OK (${final}, ended → lobby, import ok)`);
+
+  // «Что ответит Аня?»: the birthday person answers in the console, two phones vote.
+  const phone2Ctx = await browser.createBrowserContext();
+  const phone2 = await phone2Ctx.newPage();
+  await phone2.setViewport({ width: 390, height: 844, isMobile: true, deviceScaleFactor: 3 });
+  phone2.on("pageerror", (e) => console.error("[phone2] pageerror", e));
+  await (await focus(phone2)).goto(base);
+  await phone2.waitForSelector('[data-testid="lobby"]');
+  const voters = [phone, phone2];
+  const screens = [tv, ...voters];
+  await focus(host);
+  await host.click('[data-testid="start-birthday"]');
+  for (const g of screens) {
+    await (await focus(g)).waitForSelector('[data-testid="bg-waiting"]', { timeout: 10000 });
+  }
+  await focus(host);
+  await host.waitForSelector('[data-testid="bg-answer-input"]');
+  await host.type('[data-testid="bg-answer-input"]', "Пицца");
+  await host.click('[data-testid="bg-answer-submit"]');
+  await host.waitForSelector('[data-testid="bg-start-voting"]:not([disabled])');
+  for (const g of screens) assert(!(await g.content()).includes("Пицца"), "answer leaked early");
+  await host.screenshot({ path: "/tmp/party-quiz-bg-host.png" });
+  await host.click('[data-testid="bg-start-voting"]');
+
+  const optionIndex = (p: Page, wanted: boolean) =>
+    p.$$eval(
+      '[data-testid^="bg-option-"]',
+      (els, want) => els.findIndex((e) => e.textContent?.includes("Пицца") === want),
+      wanted,
+    );
+  const voteAs = async (p: Page, name: string, correct: boolean) => {
+    await (await focus(p)).waitForSelector('[data-testid="bg-option-0"]', { timeout: 10000 });
+    await p.click(`[data-testid="bg-option-${await optionIndex(p, correct)}"]`);
+    await p.waitForSelector('[data-testid="name-input"]', { timeout: 5000 });
+    await p.type('[data-testid="name-input"]', name);
+    await p.click('[data-testid="name-save"]');
+    await p.waitForFunction(
+      (n) => document.querySelector('[data-testid="bg-me"]')?.textContent?.includes(n),
+      { timeout: 5000 },
+      name,
+    );
+  };
+  await voteAs(phone, "Петя", true);
+  await voteAs(phone2, "Вася", false);
+  await (await focus(tv)).waitForFunction(
+    () => document.querySelector('[data-testid="bg-voted"]')?.textContent?.includes("2"),
+    { timeout: 5000 },
+  );
+  await focus(host);
+  await host.click('[data-testid="bg-reveal"]');
+  const result = async (p: Page, text: string) =>
+    (await focus(p)).waitForFunction(
+      (t) => document.querySelector('[data-testid="bg-result"]')?.textContent?.includes(t),
+      { timeout: 5000 },
+      text,
+    );
+  await result(phone, "Угадал");
+  await result(phone2, "Мимо");
+  await (await focus(tv)).waitForSelector('[data-correct="true"]');
+  assert((await tv.$('[data-testid="bg-result"]')) === null, "the TV did not vote");
+  await focus(phone);
+  await Bun.sleep(1500); // let the reveal animations finish for the screenshots
+  await phone.screenshot({ path: "/tmp/party-quiz-bg-phone.png" });
+  await focus(tv);
+  await Bun.sleep(1500);
+  await tv.screenshot({ path: "/tmp/party-quiz-bg-tv.png" });
+
+  // Scores survive a restart.
+  server.kill();
+  await server.exited;
+  server = startServer();
+  await waitHealthy();
+  await (await focus(host)).reload();
+  await host.waitForSelector('[data-testid="bg-scores"]');
+  await host.click('[data-testid="bg-scores"]');
+  await (await focus(tv)).waitForFunction(
+    () => {
+      const t = document.querySelector('[data-testid="bg-leaderboard"]')?.textContent ?? "";
+      return /Петя\s*1/.test(t) && /Вася\s*0/.test(t);
+    },
+    { timeout: 10000 },
+  );
+  await Bun.sleep(1500);
+  await tv.screenshot({ path: "/tmp/party-quiz-bg-scores.png" });
+  await phone2Ctx.close();
+  console.log(`E2E OK (${final}, ended → lobby, import ok, birthday votes + scores ok)`);
 } finally {
   await browser.close();
   server.kill();

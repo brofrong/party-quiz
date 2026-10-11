@@ -90,7 +90,7 @@ export function QuizTransfer({ quizId, title }: { quizId: string; title: string 
               {pending?.exportedAt
                 ? `, выгружен ${new Date(pending.exportedAt).toLocaleString("ru-RU")}`
                 : ""}
-              . Текущие кадры, ответы и квадраты на этом сервере будут заменены, гости сразу увидят
+              . Текущее содержимое викторины на этом сервере будет заменено, гости сразу увидят
               новую версию.
             </AlertDialogDescription>
           </AlertDialogHeader>

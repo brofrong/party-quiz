@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ensureGuestSession } from "@/client/shared/auth-client";
 import { ConnectionBanner } from "@/client/shared/ConnectionBanner";
 import { FullscreenButton } from "@/client/shared/FullscreenButton";
@@ -39,6 +40,7 @@ function PlayerRoot() {
   trpc.game.onState.useSubscription(undefined, {
     onData: (s) => setSnap(s as PlayerSnapshot),
   });
+  const act = trpc.game.act.useMutation({ onError: (e) => toast.error(e.message) });
   useWakeLock(snap?.status === "playing");
   const Player = snap?.status === "playing" ? getPlayerModule(snap.quizType)?.Player : undefined;
   return (
@@ -55,7 +57,7 @@ function PlayerRoot() {
         ) : (
           <motion.div key={`game:${snap.quizId}`} className="h-full" {...fade}>
             {Player ? (
-              <Player view={snap.view} />
+              <Player view={snap.view} act={(action) => act.mutate({ action })} />
             ) : (
               <ErrorScreen message="Эта викторина не поддерживается — обнови страницу" />
             )}

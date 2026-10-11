@@ -26,8 +26,8 @@ export function EndGameButton({ title, busy, onConfirm }: Props) {
         <AlertDialogHeader>
           <AlertDialogTitle>Завершить «{title}»?</AlertDialogTitle>
           <AlertDialogDescription>
-            Все экраны вернутся в лобби с QR-кодом. Если запустить викторину снова, она начнётся с
-            первого кадра.
+            Все экраны вернутся в лобби с QR-кодом. Если запустить викторину снова, она начнётся
+            сначала.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

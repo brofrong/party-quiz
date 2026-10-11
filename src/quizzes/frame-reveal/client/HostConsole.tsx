@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, EyeOff, RotateCcw, Shuffle, Sparkles } from "lucide-react";
 import { useEffect } from "react";
 import { Frame } from "@/client/shared/Frame";
+import { isTyping } from "@/client/shared/hotkeys";
 import { MediaPicture } from "@/client/shared/MediaPicture";
 import { Preloader } from "@/client/shared/Preloader";
 import { useLocalStorage } from "@/client/shared/use-local-storage";
@@ -19,13 +20,6 @@ import {
   type RevealAnimation,
 } from "../schema";
 import { FrameRevealPlayer } from "./Player";
-
-// Hotkeys must not fire while typing or while a dialog (e.g. "end game") has focus.
-const isTyping = (t: EventTarget | null) =>
-  t instanceof HTMLElement &&
-  (t.isContentEditable ||
-    ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) ||
-    t.closest('[role="dialog"], [role="alertdialog"]') !== null);
 
 export function FrameRevealHostConsole({ view: raw, dispatch, busy, onReset }: HostConsoleProps) {
   const view = raw as FrameRevealHostView;
