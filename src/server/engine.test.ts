@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 import type { FrameRevealHostView, FrameRevealPublicView } from "@/quizzes/frame-reveal/schema";
+import { getQuizModule } from "@/quizzes/registry.server";
+import type { AnyQuizModule } from "@/quizzes/types";
 import { makeContent } from "@/test/fixtures";
 import { openDatabase } from "./db";
 import { EngineError, GameEngine } from "./engine";
@@ -123,5 +125,68 @@ describe("GameEngine", () => {
     engine.start("frames");
     await done;
     expect(seen).toEqual(["lobby", "playing"]);
+  });
+});
+
+describe("guest actions and personal views", () => {
+  // A tiny voting module: guests add their id to a list; each guest sees whether they voted.
+  const voting: AnyQuizModule = {
+    type: "voting",
+    label: "Голосование",
+    contentSchema: z.object({}),
+    stateSchema: z.object({ voters: z.array(z.string()) }),
+    actionSchema: z.never(),
+    initialState: () => ({ voters: [] }),
+    reduce: (_c, s) => s,
+    publicView: (_c, s, viewer) => ({
+      count: s.voters.length,
+      mine: s.voters.includes(viewer?.id),
+    }),
+    hostView: (_c, s) => s,
+    itemCount: () => 1,
+    playerActionSchema: z.object({ type: z.literal("vote") }),
+    reducePlayer: (_c, s, player) => {
+      if (player.name === "") throw new Error("Сначала представься");
+      return { voters: [...s.voters, player.id] };
+    },
+  };
+  const makeVoting = () => {
+    repo.insertIfMissing({ id: "poll", type: "voting", title: "Опрос", content: {} });
+    const e = new GameEngine({
+      repo,
+      store,
+      log: () => {},
+      getModule: (t) => (t === "voting" ? voting : getQuizModule(t)),
+    });
+    e.start("poll");
+    return e;
+  };
+  const viewOf = (e: GameEngine, id: string) => {
+    const s = e.playerSnapshot({ id, name: id });
+    if (s.status !== "playing") throw new Error("not playing");
+    return s.view;
+  };
+
+  test("a guest action reaches reducePlayer and each guest sees their own view", () => {
+    const e = makeVoting();
+    e.playerDispatch({ id: "ann", name: "Аня" }, { type: "vote" });
+    expect(viewOf(e, "ann")).toEqual({ count: 1, mine: true });
+    expect(viewOf(e, "bob")).toEqual({ count: 1, mine: false });
+  });
+
+  test("module errors become EngineError; invalid actions are ZodError", () => {
+    const e = makeVoting();
+    expect(() => e.playerDispatch({ id: "x", name: "" }, { type: "vote" })).toThrow(
+      new EngineError("Сначала представься"),
+    );
+    expect(() => e.playerDispatch({ id: "x", name: "X" }, { type: "boom" })).toThrow(ZodError);
+  });
+
+  test("quizzes without guest actions reject them", () => {
+    engine.start("frames");
+    expect(() => engine.playerDispatch({ id: "g", name: "Гость" }, { type: "next" })).toThrow(
+      EngineError,
+    );
+    expect(() => make().playerDispatch({ id: "g", name: "Гость" }, {})).toThrow(EngineError);
   });
 });

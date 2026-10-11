@@ -38,11 +38,16 @@ export async function createServer({ env, pages, contentDir, mediaDir }: ServerO
     ref.variants.every((w) =>
       MEDIA_FORMATS.every((f) => existsSync(join(mediaDir, mediaFileName(ref.hash, w, f)))),
     );
+  const renameStmt = sqlite.prepare('UPDATE "user" SET "name" = ?, "updatedAt" = ? WHERE "id" = ?');
+  const renameUser = (userId: string, name: string) => {
+    renameStmt.run(name, new Date().toISOString(), userId);
+  };
   const createContext = createContextFactory({
     auth,
     engine,
     repo,
     hasMedia,
+    renameUser,
     devBypass: env.devBypass,
   });
   const onError = ({ error, path }: { error: Error; path?: string }) => {

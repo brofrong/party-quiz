@@ -1,6 +1,6 @@
 import { EventEmitter, on } from "node:events";
 import { getQuizModule } from "@/quizzes/registry.server";
-import type { AnyQuizModule } from "@/quizzes/types";
+import type { AnyQuizModule, Viewer } from "@/quizzes/types";
 import type { HostSnapshot, PersistedSession, PlayerSnapshot } from "@/shared/game";
 import type { QuizRepo, SessionStore } from "./repo";
 
@@ -65,6 +65,20 @@ export class GameEngine {
     this.commit();
   }
 
+  /** A guest's own action (e.g. a vote); the module decides whether it is allowed now. */
+  playerDispatch(player: Viewer, action: unknown): void {
+    const a = this.requireActive();
+    const { playerActionSchema: schema, reducePlayer } = a.module;
+    if (!schema || !reducePlayer) throw new EngineError("В этой викторине гости не отвечают");
+    const parsed = schema.parse(action);
+    try {
+      a.state = reducePlayer(a.content, a.state, player, parsed);
+    } catch (err) {
+      throw new EngineError(err instanceof Error ? err.message : String(err));
+    }
+    this.commit();
+  }
+
   contentChanged(quizId: string): void {
     if (this.active?.quizId !== quizId) return;
     try {
@@ -76,7 +90,7 @@ export class GameEngine {
     this.commit();
   }
 
-  playerSnapshot(): PlayerSnapshot {
+  playerSnapshot(viewer: Viewer | null = null): PlayerSnapshot {
     const a = this.active;
     if (!a) return { status: "lobby", online: this.online };
     return {
@@ -85,7 +99,7 @@ export class GameEngine {
       quizType: a.quizType,
       rev: this.rev,
       online: this.online,
-      view: a.module.publicView(a.content, a.state),
+      view: a.module.publicView(a.content, a.state, viewer),
     };
   }
 

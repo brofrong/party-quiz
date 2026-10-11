@@ -108,3 +108,18 @@ test("guest over WebSocket follows the host in realtime", async () => {
   sub.unsubscribe();
   wsClient.close();
 });
+
+test("a guest's name is stored in their session", async () => {
+  const signIn = await fetch(`${base}/api/auth/sign-in/anonymous`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: base },
+    body: "{}",
+  });
+  const cookie = (signIn.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  const guest = createTRPCClient<AppRouter>({
+    links: [httpBatchLink({ url: `${base}/api/trpc`, headers: { cookie } })],
+  });
+  expect(await guest.me.query()).toMatchObject({ hasName: false });
+  await guest.profile.setName.mutate({ name: "Петя" });
+  expect(await guest.me.query()).toMatchObject({ hasName: true, user: { name: "Петя" } });
+});

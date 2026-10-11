@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getQuizModule, quizModules } from "@/quizzes/registry.server";
+import { hasPlayerName, playerNameSchema } from "@/shared/player-name";
 import { QUIZ_FILE_FORMAT, type QuizFile, quizFileSchema } from "@/shared/quiz-file";
 import { guestProcedure, hostProcedure, publicProcedure, router, run } from "./init";
 
@@ -10,13 +11,25 @@ export const appRouter = router({
   me: publicProcedure.query(({ ctx }) => ({
     user: ctx.user,
     isHost: Boolean(ctx.user && !ctx.user.isAnonymous),
+    hasName: hasPlayerName(ctx.user),
   })),
+
+  profile: router({
+    setName: guestProcedure
+      .input(z.object({ name: playerNameSchema }))
+      .mutation(({ ctx, input }) => {
+        ctx.renameUser(ctx.user.id, input.name);
+        return { name: input.name };
+      }),
+  }),
 
   game: router({
     onState: guestProcedure.subscription(async function* ({ ctx, signal }) {
       const leave = ctx.engine.join(ctx.user.id);
       try {
-        yield* ctx.engine.watch(() => ctx.engine.playerSnapshot(), signal);
+        // ctx.user is captured when the socket connects, so modules take names from their own state.
+        const viewer = { id: ctx.user.id, name: ctx.user.name };
+        yield* ctx.engine.watch(() => ctx.engine.playerSnapshot(viewer), signal);
       } finally {
         leave();
       }
@@ -35,6 +48,12 @@ export const appRouter = router({
     }),
     dispatch: hostProcedure.input(z.object({ action: z.unknown() })).mutation(({ ctx, input }) => {
       run(() => ctx.engine.dispatch(input.action));
+    }),
+    /** A guest's own action (a vote). Names come from the session, never from the client. */
+    act: guestProcedure.input(z.object({ action: z.unknown() })).mutation(({ ctx, input }) => {
+      run(() =>
+        ctx.engine.playerDispatch({ id: ctx.user.id, name: ctx.user.name.trim() }, input.action),
+      );
     }),
   }),
 

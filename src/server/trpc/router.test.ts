@@ -15,8 +15,12 @@ const host: CtxUser = { id: "h", name: "Ведущий", isAnonymous: false };
 const guest: CtxUser = { id: "g", name: "Anonymous", isAnonymous: true };
 let missingMedia = new Set<string>();
 const hasMedia = (ref: { hash: string }) => !missingMedia.has(ref.hash);
+let renamed: Array<[string, string]> = [];
+const renameUser = (id: string, name: string) => {
+  renamed.push([id, name]);
+};
 const caller = (user: CtxUser | null) =>
-  appRouter.createCaller({ user, engine, repo, hasMedia } satisfies Context);
+  appRouter.createCaller({ user, engine, repo, hasMedia, renameUser } satisfies Context);
 
 beforeEach(() => {
   const { db } = openDatabase(":memory:");
@@ -29,6 +33,7 @@ beforeEach(() => {
   });
   engine = new GameEngine({ repo, store: createSessionStore(db) });
   missingMedia = new Set();
+  renamed = [];
 });
 
 const code = async (p: Promise<unknown>) => {
@@ -57,7 +62,7 @@ describe("access control", () => {
   test("me reports host status", async () => {
     expect(await caller(host).me()).toMatchObject({ isHost: true });
     expect(await caller(guest).me()).toMatchObject({ isHost: false });
-    expect(await caller(null).me()).toEqual({ user: null, isHost: false });
+    expect(await caller(null).me()).toEqual({ user: null, isHost: false, hasName: false });
   });
 });
 
@@ -162,5 +167,27 @@ describe("quiz export/import (moving edits between servers)", () => {
     expect(await code(caller(guest).quiz.import({ quizId: "frames", file: fileFor(edited) }))).toBe(
       "FORBIDDEN",
     );
+  });
+});
+
+describe("guest profile and actions", () => {
+  test("a guest without a name has hasName=false until they introduce themselves", async () => {
+    expect(await caller(guest).me()).toMatchObject({ hasName: false });
+    expect(await caller({ ...guest, name: "Петя" }).me()).toMatchObject({ hasName: true });
+  });
+
+  test("setName trims, validates and stores the name for the caller only", async () => {
+    expect(await caller(guest).profile.setName({ name: "  Петя " })).toEqual({ name: "Петя" });
+    expect(renamed).toEqual([["g", "Петя"]]);
+    expect(await code(caller(guest).profile.setName({ name: "   " }))).toBe("BAD_REQUEST");
+    expect(await code(caller(guest).profile.setName({ name: "x".repeat(25) }))).toBe("BAD_REQUEST");
+    expect(await code(caller(null).profile.setName({ name: "Петя" }))).toBe("UNAUTHORIZED");
+  });
+
+  test("act needs a game whose quiz accepts guest actions", async () => {
+    const act = () => caller(guest).game.act({ action: { type: "vote", option: 0 } });
+    expect(await code(act())).toBe("BAD_REQUEST");
+    await caller(host).game.start({ quizId: "frames" });
+    expect(await code(act())).toBe("BAD_REQUEST");
   });
 });

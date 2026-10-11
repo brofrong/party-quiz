@@ -10,6 +10,8 @@ export type Context = {
   repo: QuizRepo;
   /** Whether every compressed variant of a picture exists on this server. */
   hasMedia: (ref: MediaRef) => boolean;
+  /** Stores a guest's display name in their session user. */
+  renameUser: (userId: string, name: string) => void;
 };
 
 export const DEV_HOST_COOKIE = "dev_host";
@@ -20,10 +22,16 @@ export function createContextFactory(deps: {
   engine: GameEngine;
   repo: QuizRepo;
   hasMedia: (ref: MediaRef) => boolean;
+  renameUser: (userId: string, name: string) => void;
   devBypass: boolean;
 }) {
   return async (headers: Headers): Promise<Context> => {
-    const base = { engine: deps.engine, repo: deps.repo, hasMedia: deps.hasMedia };
+    const base = {
+      engine: deps.engine,
+      repo: deps.repo,
+      hasMedia: deps.hasMedia,
+      renameUser: deps.renameUser,
+    };
     if (deps.devBypass && DEV_HOST_RE.test(headers.get("cookie") ?? "")) {
       return { ...base, user: { id: "dev-host", name: "Dev Host", isAnonymous: false } };
     }
