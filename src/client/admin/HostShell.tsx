@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { HostSnapshot } from "@/shared/game";
 import { ConsoleScreen } from "./ConsoleScreen";
 import { EditorScreen } from "./EditorScreen";
+import { EndGameButton } from "./EndGameButton";
 import { QuizList } from "./QuizList";
 
 type Screen = { kind: "home" } | { kind: "console" } | { kind: "editor"; quizId: string };
@@ -46,9 +47,13 @@ export function HostShell({ userName }: { userName: string }) {
             </Button>
           )}
           {playing && (
-            <Button size="sm" variant="outline" onClick={() => stop.mutate()}>
-              В лобби
-            </Button>
+            <EndGameButton
+              title={playing.title}
+              busy={stop.isPending}
+              onConfirm={() =>
+                stop.mutate(undefined, { onSuccess: () => toast.success("Игра завершена") })
+              }
+            />
           )}
           <span className="hidden text-muted-foreground text-sm sm:inline">{userName}</span>
           <Button

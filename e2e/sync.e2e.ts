@@ -155,7 +155,17 @@ try {
   await host.waitForSelector('[data-testid="host-answer"]');
   await host.keyboard.press("ArrowRight");
   for (const g of guests) await waitCounter(g, "2 /");
-  console.log(`E2E OK (tv: ${await counter(tv)}, phone: ${await counter(phone)})`);
+  const final = `tv: ${await counter(tv)}, phone: ${await counter(phone)}`;
+
+  // Host ends the game (with confirmation): every screen returns to the lobby.
+  await focus(host);
+  await host.click('[data-testid="end-game"]');
+  await host.waitForSelector('[data-testid="end-game-confirm"]', { timeout: 5000 });
+  await host.click('[data-testid="end-game-confirm"]');
+  for (const g of guests) {
+    await (await focus(g)).waitForSelector('[data-testid="lobby"]', { timeout: 10000 });
+  }
+  console.log(`E2E OK (${final}, ended → lobby)`);
 } finally {
   await browser.close();
   server.kill();
