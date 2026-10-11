@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import QRCode from "qrcode/lib/browser";
 import { useEffect, useState } from "react";
 import { pluralRu } from "@/lib/plural";
+import { Balloons } from "./Balloons";
 
 const JOIN_URL = location.origin;
 
@@ -13,8 +14,9 @@ export function Lobby({ online }: { online: number }) {
   return (
     <div
       data-testid="lobby"
-      className="party-bg flex h-full flex-col items-center justify-center gap-6 p-6 text-center text-white"
+      className="party-bg relative isolate flex h-full overflow-hidden flex-col items-center justify-center gap-6 p-6 text-center text-white"
     >
+      <Balloons />
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

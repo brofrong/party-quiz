@@ -160,3 +160,54 @@
   background-size: 200% 200%;
   animation: party-gradient 18s ease infinite;
 }
+
+/* Воздушные шарики в лобби: медленно всплывают и покачиваются, хвостик-нитка болтается. */
+@keyframes balloon-rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(calc(-100vh - 100%));
+  }
+}
+
+@keyframes balloon-sway {
+  from {
+    transform: translateX(-12px) rotate(-4deg);
+  }
+  to {
+    transform: translateX(12px) rotate(4deg);
+  }
+}
+
+@keyframes balloon-string {
+  from {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: rotate(7deg);
+  }
+}
+
+.balloon-rise {
+  z-index: -1;
+  animation: balloon-rise linear infinite;
+  will-change: transform;
+}
+
+.balloon-sway {
+  transform-origin: 50% 20%;
+  animation: balloon-sway ease-in-out infinite alternate;
+}
+
+.balloon-string {
+  transform-box: view-box;
+  transform-origin: 30px 74px;
+  animation: balloon-string ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .balloon-rise {
+    display: none;
+  }
+}
