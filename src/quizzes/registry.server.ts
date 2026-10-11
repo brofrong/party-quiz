@@ -1,8 +1,9 @@
+import { birthdayGuessModule } from "./birthday-guess/module";
 import { frameRevealModule } from "./frame-reveal/module";
 import type { AnyQuizModule } from "./types";
 
 // Add new quiz types here (and in registry.player.ts / registry.admin.ts).
-const modules: AnyQuizModule[] = [frameRevealModule];
+const modules: AnyQuizModule[] = [frameRevealModule, birthdayGuessModule];
 
 export const quizModules: ReadonlyMap<string, AnyQuizModule> = new Map(
   modules.map((m) => [m.type, m]),

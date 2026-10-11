@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { TRPCError } from "@trpc/server";
+import type { BirthdayPublicView } from "@/quizzes/birthday-guess/schema";
 import type { FrameRevealPublicView } from "@/quizzes/frame-reveal/schema";
 import type { PlayerSnapshot } from "@/shared/game";
+import { makeBirthdayContent } from "@/test/birthday-fixtures";
 import { makeContent } from "@/test/fixtures";
 import { openDatabase } from "../db";
 import { GameEngine } from "../engine";
@@ -189,5 +191,25 @@ describe("guest profile and actions", () => {
     expect(await code(act())).toBe("BAD_REQUEST");
     await caller(host).game.start({ quizId: "frames" });
     expect(await code(act())).toBe("BAD_REQUEST");
+  });
+
+  test("guests vote with their session name; unnamed guests are asked to introduce themselves", async () => {
+    repo.insertIfMissing({
+      id: "bday",
+      type: "birthday-guess",
+      title: "Что ответит Аня?",
+      content: makeBirthdayContent(["q1"]),
+    });
+    await caller(host).game.start({ quizId: "bday" });
+    for (const action of [{ type: "submitAnswer", text: "Пицца" }, { type: "startVoting" }]) {
+      await caller(host).game.dispatch({ action });
+    }
+    const vote = { type: "vote", option: 2 };
+    expect(await code(caller(guest).game.act({ action: vote }))).toBe("BAD_REQUEST");
+    const petya = { ...guest, name: "Петя" };
+    expect(await code(caller(petya).game.act({ action: vote }))).toBe("OK");
+    const snap = engine.playerSnapshot({ id: "g", name: "stale" });
+    if (snap.status !== "playing") throw new Error("not playing");
+    expect(snap.view as BirthdayPublicView).toMatchObject({ myVote: 2, me: { name: "Петя" } });
   });
 });

@@ -51,9 +51,8 @@ export const appRouter = router({
     }),
     /** A guest's own action (a vote). Names come from the session, never from the client. */
     act: guestProcedure.input(z.object({ action: z.unknown() })).mutation(({ ctx, input }) => {
-      run(() =>
-        ctx.engine.playerDispatch({ id: ctx.user.id, name: ctx.user.name.trim() }, input.action),
-      );
+      const name = hasPlayerName(ctx.user) ? ctx.user.name.trim() : "";
+      run(() => ctx.engine.playerDispatch({ id: ctx.user.id, name }, input.action));
     }),
   }),
 
